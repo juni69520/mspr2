@@ -52,7 +52,7 @@ class mail extends PHPMailer{
             break;
             
             case '2fa':
-                $content = "Nouvelle détection connecté, voici votre code d'authentification {$code}";
+                $content = "Nouvelle connexion détectée, voici votre code d'authentification {$code}";
             break;
 
             default :

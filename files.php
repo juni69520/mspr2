@@ -1,8 +1,12 @@
 <?php
+session_start();
 
+if(!isset($_SESSION['logged']) || (isset($_SESSION['logged']) && $_SESSION['logged'] != 'oui')){
+  header("Location: index.php");
+}
 
-$files1 = scandir('/media');
-if ($handle = opendir('/media')) {
+$files1 = scandir('/partage/medecin');
+if ($handle = opendir('/partage/medecin')) {
   while (false !== ($file = readdir($handle))) {
     if ($file != "." && $file != "..") {
         $thelist .= '<li>'.$file.'</li>';
@@ -21,7 +25,7 @@ if ($handle = opendir('/media')) {
       <title></title>
   </head>
   <body>
-    <h1>List of files:</h1>
+    <h1>Liste des fichiers:</h1>
     <ul><?php echo $thelist; ?></ul>
   </body>
 </html>
