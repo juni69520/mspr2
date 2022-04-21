@@ -59,6 +59,7 @@
 
         $ldapconn = ldap_connect("ldap://192.168.1.21:389")
         or die("Could not connect to LDAP server.");
+
         if ($ldapconn) {
             $ldapbind = ldap_bind($ldapconn, $ldaprdn, $ldappass);
             if ($ldapbind) {
@@ -66,11 +67,14 @@
                 if(!isset($result['id_user']) || (isset($result['id_user']) && $result['two_factor'] != 'o')){
                     echo '<script type="text/javascript">toastr.error("Connexion réussie, veuillez confirmer votre email.")</script>';
                     $code = base64_encode(random_bytes(10));
-                    $sql = "INSERT INTO user (nom_user, ip_user, navigateur_user, code_user) VALUES (?,?,?,?)";
-                    $stmt= $conn->prepare($sql);
-                    $stmt->execute([$ldaprdn, $oIp->getIpAddress(), $oIp->getBrowser(), $code]);
-                    $_SESSION['id_user'] = $conn->lastInsertId();
-
+                    if(!isset($result['id_user'])){
+                        $sql = "INSERT INTO user (nom_user, ip_user, navigateur_user, code_user) VALUES (?,?,?,?)";
+                        $stmt= $conn->prepare($sql);
+                        $stmt->execute([$ldaprdn, $oIp->getIpAddress(), $oIp->getBrowser(), $code]);
+                        $_SESSION['id_user'] = $conn->lastInsertId();
+                    }else{
+                        $_SESSION['id_user'] = $result['id_user'];
+                    }
                     new mail('quentin.viegas@gmail.com', '2fa_'.$code);
                     sleep(10);
                     header('Location: 2fa.php');
