@@ -12,17 +12,30 @@ Class ip{
     }
     
     private function setIpAdress(){
-        $ip = getenv('HTTP_CLIENT_IP') ?: getenv('HTTP_X_FORWARDED_FOR') ?: getenv('HTTP_X_FORWARDED') ?: getenv('HTTP_FORWARDED_FOR') ?: getenv('HTTP_FORWARDED') ?: getenv('REMOTE_ADDR');
+
+        // Get real visitor IP behind CloudFlare network
+        if (isset($_SERVER["HTTP_CF_CONNECTING_IP"])) {
+                $_SERVER['REMOTE_ADDR'] = $_SERVER["HTTP_CF_CONNECTING_IP"];
+                $_SERVER['HTTP_CLIENT_IP'] = $_SERVER["HTTP_CF_CONNECTING_IP"];
+        }
+        $client  = @$_SERVER['HTTP_CLIENT_IP'];
+        $forward = @$_SERVER['HTTP_X_FORWARDED_FOR'];
+        $remote  = $_SERVER['REMOTE_ADDR'];
+        
+        if(filter_var($client, FILTER_VALIDATE_IP)){
+            $ip = $client;
+        }elseif(filter_var($forward, FILTER_VALIDATE_IP)){
+            $ip = $forward;
+        }else{
+            $ip = $remote;
+        }
+        
         $this->ip = $ip;
     }
 
     private function setCountry(){
-        $ip_address = $this->getIpAddress();
-        $jsondata = file_get_contents("http://timezoneapi.io/api/ip/?{$ip_address}&token={$this->getToken()}");
-        $data = json_decode($jsondata, true);
-
-        $country = ($data['meta']['code'] == '200') ? 'France' : '';
-        $this->country = $country;
+        $details = json_decode(file_get_contents("http://ipinfo.io/{$this->getIpAddress()}/json"));
+        $this->country = $details->country;
     }
 
     private function setBrowser(){

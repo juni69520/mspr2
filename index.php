@@ -46,18 +46,8 @@
         $result = $sth->fetch(PDO::FETCH_ASSOC);
 
         $oIp = new ip();
-
-        if(isset($result['id_user']) && $result['id_user'] != ''){
-            if($result['ip_user'] != $oIp->getIpAddress()){
-                new mail('quentin.viegas@gmail.com', 'default');
-            }elseif($result['navigateur_user'] != $oIp->getBrowser()){
-                new mail('quentin.viegas@gmail.com', 'NavigateurDifferent');
-            }elseif($oIp->getBrowser() != '' &&  $oIp->getCountry() != 'France'){
-                new mail('quentin.viegas@gmail.com', 'ipHorsFrance');
-            }
-        }
-
-        $ldapconn = ldap_connect("ldap://192.168.1.21:389")
+        $config = parse_ini_file('./private/config.ini');
+        $ldapconn = ldap_connect($config['APP_LDAP_IP'])
         or die("Could not connect to LDAP server.");
 
         ldap_set_option($ldapconn, LDAP_OPT_PROTOCOL_VERSION, 3) or die('Unable to set LDAP protocol version');
@@ -67,32 +57,42 @@
             $ldapbind = ldap_bind($ldapconn, $ldaprdn, $ldappass);
             if ($ldapbind) {
                 $_SESSION['logged'] = 'oui';
+                $ldap_base_dn = $config['APP_LDAP_DC'];
+                $search_filter = "(UserPrincipalName={$ldaprdn})";
+                $resultLdap = ldap_search($ldapconn, $ldap_base_dn, $search_filter);
+                $entries = ldap_get_entries($ldapconn, $resultLdap);
+                $email = $entries[0]["mail"][0];
+
+                if($oIp->getCountry() != 'FR'){
+                    new mail($email, 'ipHorsFrance');
+                    die();
+                }elseif($result['ip_user'] != $oIp->getIpAddress()){
+                    new mail($email, 'default');
+                }elseif($result['navigateur_user'] != $oIp->getBrowser()){
+                    new mail($email, 'NavigateurDifferent');
+                }
+
                 if(!isset($result['id_user']) || (isset($result['id_user']) && $result['two_factor'] != 'o')){
                     echo '<script type="text/javascript">toastr.error("Connexion réussie, veuillez confirmer votre email.")</script>';
-                    $code = base64_encode(random_bytes(10));
+                    
                     if(!isset($result['id_user'])){
+                        $code = base64_encode(random_bytes(10));
                         $sql = "INSERT INTO user (nom_user, ip_user, navigateur_user, code_user) VALUES (?,?,?,?)";
                         $stmt= $conn->prepare($sql);
                         $stmt->execute([$ldaprdn, $oIp->getIpAddress(), $oIp->getBrowser(), $code]);
                         $_SESSION['id_user'] = $conn->lastInsertId();
                     }else{
                         $_SESSION['id_user'] = $result['id_user'];
+                        $code = $result['code_user'];
                     }
 
-                    $ldap_base_dn = 'DC=chatelet,DC=local';
-                    $search_filter = "(UserPrincipalName={$ldaprdn})";
-                    $result = ldap_search($ldapconn, $ldap_base_dn, $search_filter);
-
-                    $entries = ldap_get_entries($ldapconn, $result);
-                    print_r($entries);
-
-                    new mail('quentin.viegas@gmail.com', '2fa_'.$code);
-                    sleep(10);
+                    new mail($email, '2fa_'.$code);
                     header('Location: 2fa.php');
                     exit();
                 }else{
                     echo '<script type="text/javascript">toastr.error("Connexion réussie")</script>';
                     $_SESSION['id_user'] = $result['id_user'];
+
                     header('Location: files.php');
                     exit();
                 }
