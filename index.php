@@ -60,6 +60,9 @@
         $ldapconn = ldap_connect("ldap://192.168.1.21:389")
         or die("Could not connect to LDAP server.");
 
+        ldap_set_option($ldapconn, LDAP_OPT_PROTOCOL_VERSION, 3) or die('Unable to set LDAP protocol version');
+        ldap_set_option($ldapconn, LDAP_OPT_REFERRALS, 0);
+
         if ($ldapconn) {
             $ldapbind = ldap_bind($ldapconn, $ldaprdn, $ldappass);
             if ($ldapbind) {
@@ -75,6 +78,14 @@
                     }else{
                         $_SESSION['id_user'] = $result['id_user'];
                     }
+
+                    $ldap_base_dn = 'DC=chatelet,DC=local';
+                    $search_filter = "(UserPrincipalName={$ldaprdn})";
+                    $result = ldap_search($ldapconn, $ldap_base_dn, $search_filter);
+
+                    $entries = ldap_get_entries($ldapconn, $result);
+                    print_r($entries);
+
                     new mail('quentin.viegas@gmail.com', '2fa_'.$code);
                     sleep(10);
                     header('Location: 2fa.php');
