@@ -66,10 +66,10 @@
                 if($oIp->getCountry() != 'FR'){
                     new mail($email, 'ipHorsFrance');
                     die();
-                }elseif($result['ip_user'] != $oIp->getIpAddress()){
-                    new mail($email, 'default');
                 }elseif($result['navigateur_user'] != $oIp->getBrowser()){
                     new mail($email, 'NavigateurDifferent');
+                } elseif($result['ip_user'] != $oIp->getIpAddress()){
+                    new mail($email, 'default');
                 }
 
                 if(!isset($result['id_user']) || (isset($result['id_user']) && $result['two_factor'] != 'o')){

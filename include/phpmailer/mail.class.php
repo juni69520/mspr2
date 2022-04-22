@@ -36,7 +36,7 @@ class mail extends PHPMailer{
                 break;
 
             case 'NavigateurDifferent':
-                $content = "Activité suspecte détecté, vous vous êtes connectés depuis un navigateur qui diffère de votre précédente connexion.";
+                $content = "Activité suspecte détecté, vous vous êtes connectés depuis un navigateur qui est différent de votre précédente connexion.";
                 $mail->Subject = mb_encode_mimeheader("Alerte activite suspecte - connexion depuis un navigateur différent.");
                 break;
             case '2fa':
